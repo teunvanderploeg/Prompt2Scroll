@@ -2,6 +2,8 @@
 
 ## Preview
 
+Use Node.js 24+ to build and run the full test suite.
+
 ```sh
 npm ci
 npm run check

@@ -35,6 +35,8 @@ Run `~/.prompt2scroll/inspect` for connection details. Rerun the installer after
 
 ## Develop
 
+Use Node.js 24+ for the full test suite. The installed companion also supports Node.js 22.13+.
+
 ```sh
 npm ci
 npm run setup
