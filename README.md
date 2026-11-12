@@ -46,3 +46,7 @@ npm run lint:extension
 ```
 
 `npm run release` makes a shareable preview ZIP. [Architecture and detection](docs/technical.md) · [Release and signing](docs/releasing.md)
+
+## Mozilla reviewers
+
+See [reviewer build instructions](docs/reviewer/README.md) for the exact tool versions, installation steps and reproducible build command: `sh scripts/reviewer-build.sh`.
