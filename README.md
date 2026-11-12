@@ -1,6 +1,12 @@
 # Prompt2Scroll
 
-Use distraction sites while your coding agents work. When they need you, the page is covered without losing your place. Everything runs locally. No account or cloud service.
+Scroll while your coding agents work. When they need you, Prompt2Scroll covers the page so you can get back to your next prompt, without losing your place.
+
+I built this because I'd open social media while my agent was working, then forget to check back. The agent would finish or need input, and I'd still be scrolling. Work had stopped, but I hadn't. I wanted something that would interrupt the scrolling when it was time to prompt again.
+
+![Without Prompt2Scroll, the social feed stays open while the agent waits for input. With Prompt2Scroll, the feed is covered when the agent needs attention, reminding you to return to your next prompt.](docs/images/why-i-built-this.svg)
+
+Everything runs locally. No account or cloud service.
 
 ## See it in action
 

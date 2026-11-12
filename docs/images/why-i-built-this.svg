@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="880" viewBox="0 0 1440 880" role="img" aria-labelledby="title desc">
+  <title id="title">My agent stopped. I kept scrolling.</title>
+  <desc id="desc">An illustrated comparison. Without Prompt2Scroll, the social feed stays visible while a coding agent waits for input. With Prompt2Scroll, an attention screen covers the feed and reminds you to return to your next prompt.</desc>
+  <defs>
+    <g id="feed">
+      <rect width="624" height="360" rx="16" fill="#fff" stroke="#dce2ef" stroke-width="2"/>
+      <path d="M0 48H624" stroke="#dce2ef" stroke-width="2"/>
+      <circle cx="24" cy="24" r="5" fill="#b9c4dc"/>
+      <circle cx="42" cy="24" r="5" fill="#b9c4dc"/>
+      <circle cx="60" cy="24" r="5" fill="#b9c4dc"/>
+      <rect x="92" y="14" width="510" height="20" rx="6" fill="#f5f7fc"/>
+      <text x="110" y="29" font-size="14" fill="#56617b">social.example / feed</text>
+      <circle cx="42" cy="88" r="14" fill="#c4d1f3"/>
+      <path d="M72 82H230M72 96H176" stroke="#b9c4dc" stroke-width="8" stroke-linecap="round"/>
+      <rect x="28" y="120" width="568" height="112" rx="8" fill="#eaf0fb"/>
+      <path d="m28 209 116-64 100 51 115-39 137 75H28" fill="#d2ddf5"/>
+      <path d="M32 255H548M32 274H414" stroke="#c9d2e5" stroke-width="8" stroke-linecap="round"/>
+      <path d="M28 301H596" stroke="#dce2ef"/>
+      <circle cx="42" cy="332" r="14" fill="#d4deef"/>
+      <path d="M72 327H264M72 341H198" stroke="#b9c4dc" stroke-width="8" stroke-linecap="round"/>
+    </g>
+    <g id="waiting">
+      <rect width="624" height="106" rx="12" fill="#fff" stroke="#dce2ef" stroke-width="2"/>
+      <text x="24" y="32" font-size="15" font-weight="700" letter-spacing="1.5" fill="#56617b">CODING AGENT</text>
+      <text x="24" y="73" font-size="22" fill="#18213c">Build the settings page</text>
+      <rect x="437" y="49" width="165" height="34" rx="8" fill="#fff0ce" stroke="#eea322"/>
+      <circle cx="454" cy="66" r="5" fill="#b76900"/>
+      <text x="468" y="73" font-size="18" font-weight="600" fill="#8b4a00">Needs input</text>
+    </g>
+  </defs>
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">
+    <rect width="1440" height="880" rx="24" fill="#eaf0fb"/>
+    <text x="48" y="64" font-size="18" font-weight="700" letter-spacing="3" fill="#264ab9">WHY I BUILT PROMPT2SCROLL</text>
+    <text x="48" y="130" font-size="48" font-weight="750" letter-spacing="-1.5" fill="#18213c">My agent stopped. I kept scrolling.</text>
+    <text x="48" y="172" font-size="24" fill="#56617b">I opened social media while it worked. Then I forgot to check back.</text>
+
+    <text x="48" y="238" font-size="23" font-weight="700" fill="#18213c">Without Prompt2Scroll</text>
+    <text x="768" y="238" font-size="23" font-weight="700" fill="#264ab9">With Prompt2Scroll</text>
+    <use href="#feed" x="48" y="262"/>
+    <use href="#feed" x="768" y="262"/>
+
+    <rect x="200" y="414" width="320" height="58" rx="29" fill="#18213c"/>
+    <text x="360" y="451" text-anchor="middle" font-size="24" font-weight="600" fill="#fff">Still scrolling...</text>
+
+    <rect x="770" y="312" width="620" height="308" rx="12" fill="#f5f7fc"/>
+    <circle cx="1080" cy="386" r="25" fill="#fff0ce"/>
+    <path d="M1080 373V389" stroke="#8b4a00" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="1080" cy="398" r="2" fill="#8b4a00"/>
+    <text x="1080" y="451" text-anchor="middle" font-size="29" font-weight="700" fill="#18213c">Your agent needs attention.</text>
+    <text x="1080" y="492" text-anchor="middle" font-size="21" fill="#56617b">Build the settings page</text>
+    <text x="1080" y="562" text-anchor="middle" font-size="18" fill="#56617b">The feed is covered. Your place is saved.</text>
+
+    <path d="M360 644V674m-7-7 7 7 7-7M1080 644V674m-7-7 7 7 7-7" fill="none" stroke="#8795b4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <use href="#waiting" x="48" y="696"/>
+    <use href="#waiting" x="768" y="696"/>
+    <text x="48" y="845" font-size="23" fill="#56617b">The agent waits. The feed keeps going.</text>
+    <text x="768" y="845" font-size="23" font-weight="600" fill="#264ab9">Time to return to the next prompt.</text>
+  </g>
+</svg>
