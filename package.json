@@ -1,6 +1,6 @@
 {
   "name": "prompt2scroll",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "engines": {
@@ -14,7 +14,7 @@
     "codex": "node dist/companion/codex-launch.js",
     "inspect": "node dist/companion/host.js --inspect",
     "lint:extension": "web-ext lint --source-dir dist/extension",
-    "package": "npm run build && web-ext build --source-dir dist/extension --artifacts-dir dist --overwrite-dest",
+    "package": "npm run build && node scripts/package.mjs",
     "release": "npm run package && node scripts/release.mjs"
   },
   "dependencies": {

@@ -1,6 +1,7 @@
-import { AttentionCountdown, countdownSeconds, validCountdownSeconds } from '../shared/countdown.js';
+import { AttentionCountdown, countdownSeconds } from '../shared/countdown.js';
 import { DEFAULTS, fresh, gate, isRunning, matches, missingSession, normalizeDomain, type Session, type Settings, type Snapshot } from '../shared/policy.js';
 import { sessionURL } from '../shared/session-link.js';
+import { updateSettings, type SettingsChanges } from '../shared/settings.js';
 let settings: Settings = structuredClone(DEFAULTS); let snapshot: Snapshot | undefined; let connected=false;
 let port: browser.runtime.Port | undefined; let initialized=false;
 const remembered=new Map<string,Session>();let memoryKey='';
@@ -8,6 +9,9 @@ const lastRunning=new Map<string,Session>();
 const countdown=new AttentionCountdown();
 const allowedTabs=new Set<number>();
 const preservedTabs=new Set<number>();
+// tabs.update resolves before Firefox commits the destination. Keep polling
+// from restarting a slow navigation while the tab still reports blocked.html.
+const restoringTabs=new Map<number,string>();
 type OpenResult={ok:boolean;error?:string};
 const pendingOpens=new Map<string,{resolve:(result:OpenResult)=>void;timer:ReturnType<typeof setTimeout>}>();let nextOpen=0;
 function finishOpen(requestId:string,result:OpenResult){const pending=pendingOpens.get(requestId);if(!pending)return;clearTimeout(pending.timer);pendingOpens.delete(requestId);pending.resolve(result);}
@@ -21,9 +25,24 @@ function openInAgent(id:string):Promise<OpenResult>{
 }
 let scheduledAt:number|undefined;let blockTimer:ReturnType<typeof setTimeout>|undefined;
 const ready = browser.storage.local.get(['settings','sessionMemory']).then(x => {
-  if(x.settings)settings={countdownSeconds:countdownSeconds(x.settings.countdownSeconds),darkMode:x.settings.darkMode===true,anyRunning:x.settings.anyRunning===true,selected:Array.isArray(x.settings.selected)?x.settings.selected:[],domains:Array.isArray(x.settings.domains)?x.settings.domains.map(normalizeDomain):DEFAULTS.domains};
+  if(x.settings)settings={countdownSeconds:countdownSeconds(x.settings.countdownSeconds),darkMode:x.settings.darkMode===true,anyRunning:x.settings.anyRunning===true,autoOpenFinished:x.settings.autoOpenFinished===true,selected:Array.isArray(x.settings.selected)?x.settings.selected:[],domains:Array.isArray(x.settings.domains)?x.settings.domains.map(normalizeDomain):DEFAULTS.domains};
   if(Array.isArray(x.sessionMemory))for(const s of x.sessionMemory)if(s&&typeof s.id==='string'&&settings.selected.includes(s.id))remembered.set(s.id,s);
 }).catch(()=>{}).finally(()=>{initialized=true;});
+function autoOpenFinished(next:Snapshot){
+  // Only a confirmed transition can open an app. Initial discovery, stale
+  // heartbeats and lost connections must never steal focus.
+  if(!settings.autoOpenFinished||!connected||!snapshot||!fresh(snapshot.at)||!fresh(next.at))return;
+  const previous=new Map(snapshot.sessions.map(session=>[session.id,session]));
+  const finished=next.sessions.find(session=>{
+    const before=previous.get(session.id);
+    return (settings.anyRunning||settings.selected.includes(session.id)) && before && isRunning(before)
+      && !session.uncertainReason && fresh(session.observedAt)
+      && ['Waiting for Input','Completed','Error','Idle'].includes(session.status) && sessionURL(session);
+  });
+  // A single update can finish several threads. Open one so apps do not
+  // compete for focus, and consume the transition even if opening fails.
+  if(finished)void openInAgent(finished.id);
+}
 function remember(){
   for(const session of snapshot?.sessions??[])if(settings.selected.includes(session.id))remembered.set(session.id,session);
   for(const id of remembered.keys())if(!settings.selected.includes(id))remembered.delete(id);
@@ -33,6 +52,16 @@ function remember(){
   void browser.storage.local.set({sessionMemory}).catch(()=>{memoryKey='';});
 }
 function watch(){try{port?.postMessage({type:'watch',selected:settings.selected});}catch{}}
+let saveQueue=Promise.resolve();
+function saveSettings(changes:SettingsChanges){
+  const result=saveQueue.then(async()=>{
+    const next=updateSettings(settings,changes);
+    await browser.storage.local.set({settings:next});
+    if(next.anyRunning!==settings.anyRunning)lastRunning.clear();
+    settings=next;remember();watch();void enforce();return view();
+  });
+  saveQueue=result.then(()=>{},()=>{});return result;
+}
 function displaySnapshot():Snapshot{
   const unavailable=!connected||!snapshot||!fresh(snapshot.at);
   const sessions=(snapshot?.sessions??[]).map(s=>unavailable?{...s,uncertainReason:'Connection to the companion was lost.'}:s);
@@ -77,7 +106,8 @@ async function notifyTab(tabId:number){
   }else{
     preservedTabs.delete(tabId);
     // Firefox can forbid content scripts on protected pages. Keep that fallback closed.
-    if(!message.gate.allowed){const tab=await browser.tabs.get(tabId);if(tab.url&&matches(tab.url,settings.domains))await browser.tabs.update(tabId,{url:blockedURL(tab.url)});}
+    const tab=await browser.tabs.get(tabId);
+    if(!view(tabId).gate.allowed&&tab.url&&matches(tab.url,settings.domains))await browser.tabs.update(tabId,{url:blockedURL(tab.url)});
   }
 }
 let enforcing=false;let enforceAgain=false;
@@ -94,14 +124,23 @@ async function enforceOnce() {
   await Promise.all(tabs.map(async tab=> {
     if(tab.id===undefined || !tab.url) return;
     try {
-      if(isBlockedPage(tab.url)) { const url=new URL(tab.url).searchParams.get('url'); if(url && (state.gate.allowed || !matches(url,settings.domains)) && /^https?:/.test(url)) {if(state.gate.allowed && matches(url,settings.domains))allowedTabs.add(tab.id);await browser.tabs.update(tab.id,{url});} }
+      if(isBlockedPage(tab.url)) {
+        const url=new URL(tab.url).searchParams.get('url');
+        if(url && (state.gate.allowed || !matches(url,settings.domains)) && /^https?:/.test(url)) {
+          if(restoringTabs.get(tab.id)===url)return;
+          if(state.gate.allowed && matches(url,settings.domains))allowedTabs.add(tab.id);
+          restoringTabs.set(tab.id,url);
+          try{await browser.tabs.update(tab.id,{url});}catch(error){restoringTabs.delete(tab.id);throw error;}
+        }else restoringTabs.delete(tab.id);
+      }
       else if(matches(tab.url,settings.domains)) {
+        restoringTabs.delete(tab.id);
         const current=view(tab.id);
         if(current.gate.allowed)allowedTabs.add(tab.id);
         else if(current.blockAt===undefined)allowedTabs.delete(tab.id);
         await notifyTab(tab.id);
       }
-      else {allowedTabs.delete(tab.id);preservedTabs.delete(tab.id);await browser.tabs.sendMessage(tab.id,{type:'state',...state}).catch(()=>{});}
+      else {restoringTabs.delete(tab.id);allowedTabs.delete(tab.id);preservedTabs.delete(tab.id);await browser.tabs.sendMessage(tab.id,{type:'state',...state}).catch(()=>{});}
     } catch { /* A tab may close during an update. */ }
   }));
 }
@@ -112,7 +151,7 @@ function connect() {
     port.onMessage.addListener((raw:object)=> {
       const result=raw as {type?:string;requestId?:string;ok?:boolean;error?:string};
       if(result?.type==='open-result'){if(typeof result.requestId==='string')finishOpen(result.requestId,{ok:result.ok===true,error:result.error});return;}
-      const value=raw as Snapshot;if(!value||!Array.isArray(value.sessions)||typeof value.at!=='number'){connected=false;snapshot=undefined;}else{snapshot=value;connected=true;remember();}void enforce();
+      const value=raw as Snapshot;if(!value||!Array.isArray(value.sessions)||typeof value.at!=='number'){connected=false;snapshot=undefined;}else{autoOpenFinished(value);snapshot=value;connected=true;remember();}void enforce();
     });
     port.onDisconnect.addListener(()=>{ void browser.runtime.lastError;connected=false;snapshot=undefined;for(const requestId of pendingOpens.keys())finishOpen(requestId,{ok:false,error:'Companion disconnected.'});void enforce();setTimeout(connect,2000); });
   } catch { connected=false; setTimeout(connect,2000); }
@@ -140,15 +179,13 @@ browser.runtime.onMessage.addListener(async (message,sender)=>{
   }
   // Only extension documents may change settings.
   if(message.type==='save' && sender.url?.startsWith(browser.runtime.getURL(''))) {
-    const value=message.settings.countdownSeconds;
-    if(value!==undefined && !validCountdownSeconds(value))throw new Error('Choose a whole number of seconds from 0 to 60.');
-    if(message.settings.darkMode!==undefined&&typeof message.settings.darkMode!=='boolean')throw new Error('Dark mode must be on or off.');
-    if(message.settings.anyRunning!==undefined&&typeof message.settings.anyRunning!=='boolean')throw new Error('Any running agent must be on or off.');
-    const next:Settings={countdownSeconds:countdownSeconds(value===undefined?settings.countdownSeconds:value),darkMode:message.settings.darkMode??settings.darkMode??false,anyRunning:message.settings.anyRunning??settings.anyRunning??false,selected:[...new Set<string>(message.settings.selected)],domains:[...new Set<string>(message.settings.domains.map(normalizeDomain))]};
-    await browser.storage.local.set({settings:next});if(next.anyRunning!==settings.anyRunning)lastRunning.clear();settings=next;remember();watch();void enforce();return view();
+    return saveSettings(message.settings);
   }
 });
-browser.tabs.onRemoved.addListener(id=>{allowedTabs.delete(id);preservedTabs.delete(id);});
-browser.tabs.onUpdated.addListener((_id,change)=>{if(change.url) void enforce();});
+browser.tabs.onRemoved.addListener(id=>{restoringTabs.delete(id);allowedTabs.delete(id);preservedTabs.delete(id);});
+browser.tabs.onUpdated.addListener((id,change)=>{
+  if(change.url || change.status==='complete')restoringTabs.delete(id);
+  if(change.url) void enforce();
+});
 setInterval(()=>{if(initialized) void enforce();},1000);
 void ready.then(()=>{connect(); return enforce();});

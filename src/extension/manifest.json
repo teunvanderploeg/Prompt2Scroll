@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Prompt2Scroll",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Scroll while your selected coding agents run. Return when they need you.",
   "browser_specific_settings": {
     "gecko": {

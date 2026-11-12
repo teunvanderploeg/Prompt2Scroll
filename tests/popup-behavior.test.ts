@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { build } from 'esbuild';
 import { JSDOM } from 'jsdom';
 import { DEFAULTS, type Session } from '../src/shared/policy.js';
+import { updateSettings } from '../src/shared/settings.js';
 const bundle=build({entryPoints:['src/extension/popup.ts'],bundle:true,write:false,format:'iife',platform:'browser'});
 const flush=async()=>{for(let n=0;n<6;n++)await new Promise(resolve=>setImmediate(resolve));};
 test('pinned threads survive filters, status updates keep row focus, websites autosave, and popup position persists',async()=>{
@@ -16,7 +17,7 @@ test('pinned threads survive filters, status updates keep row focus, websites au
   window.structuredClone=structuredClone;window.setInterval=((fn:any)=>{tick=fn;return 1;}) as typeof window.setInterval;
   (window as any).browser={storage:{local:{get:async()=>structuredClone(storage),set:async(value:any)=>Object.assign(storage,structuredClone(value))}},runtime:{sendMessage:async(message:any)=>{
    if(message.type==='get')return {settings:structuredClone(settings),connected:true,snapshot:{sessions:structuredClone(sessions),diagnostics:[]}};
-   if(fail)throw new Error('Cannot save');settings=structuredClone(message.settings);return {settings};
+   if(fail)throw new Error('Cannot save');settings=updateSettings(settings,structuredClone(message.settings));return {settings};
   }}};
   window.eval((await bundle).outputFiles[0].text);await flush();
   return {dom,window,document:window.document,tick:async()=>{tick();await flush();}};

@@ -13,7 +13,7 @@ npm run lint:extension
 npm run release
 ```
 
-Share `dist/Prompt2Scroll-0.1.1-preview.zip` and its SHA-256 file. The archive contains the built extension, bundled companion and installer. Recipients need Firefox and Node.js, but no Git, npm install or build step. It works on macOS and Linux. Linux needs `lsof` for T3 detection. Windows is not supported yet.
+Share `dist/releases/0.1.2/Prompt2Scroll-0.1.2-preview.zip` and its SHA-256 file. The archive contains the built extension, bundled companion and installer. Recipients need Firefox and Node.js, but no Git, npm install or build step. It works on macOS and Linux. Linux needs `lsof` for T3 detection. Windows is not supported yet.
 
 The preview extension is temporary and disappears when Firefox restarts. For installation that survives restarts, sign the extension with Mozilla.
 
@@ -38,7 +38,7 @@ The preview extension is temporary and disappears when Firefox restarts. For ins
    npm run release -- --xpi /absolute/path/to/mozilla-signed.xpi
    ```
 
-Share `dist/Prompt2Scroll-0.1.1.zip`. Its installer copies the signed XPI into `~/.prompt2scroll` and prints the Firefox installation steps. Firefox verifies the signature. The release script checks that the XPI contains a Mozilla signature file and matches this extension's ID and version.
+Share `dist/releases/0.1.2/Prompt2Scroll-0.1.2.zip`. Its installer copies the signed XPI into `~/.prompt2scroll` and prints the Firefox installation steps. Firefox verifies the signature. The release script checks that the XPI contains a Mozilla signature file and matches this extension's ID and version.
 
 Before each update, bump the version in both `package.json` and `src/extension/manifest.json`, update the lockfile, and sign again. Users rerun the installer and install the new XPI. There is no automatic update service.
 

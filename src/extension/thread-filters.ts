@@ -1,4 +1,4 @@
-import { fresh, type Session } from '../shared/policy.js';
+import { isRunning, type Session } from '../shared/policy.js';
 export interface ThreadFilters { query: string; agent: string; status: string; oldestAt?: number; newestAt?: number; }
 export function filterThreads(sessions: Session[], selected: string[], filters: ThreadFilters, now=Date.now()): Session[] {
   const words=filters.query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
@@ -11,7 +11,7 @@ export function filterThreads(sessions: Session[], selected: string[], filters: 
     if(filters.agent && s.agent!==filters.agent)return false;
     const text=`${s.task} ${s.name} ${s.agent} ${s.id}`.toLocaleLowerCase();
     if(!words.every(word=>text.includes(word)))return false;
-    const running=s.status==='Running' && fresh(s.observedAt,now);
+    const running=isRunning(s,now);
     switch(filters.status){
       case 'selected':return selected.includes(s.id);
       case 'running':return running;

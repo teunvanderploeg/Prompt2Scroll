@@ -21,6 +21,13 @@ test('filters never deselect hidden threads or allow access past a hidden approv
   const state=gate({selected,domains:['reddit.com']},{sessions,at:now,diagnostics:[]},true,now);
   assert.equal(state.allowed,false);assert.equal(state.attention[0].id,'t3:b');
 });
+test('uncertain running threads appear under needs attention rather than running',()=>{
+ const uncertain={...sessions[0],uncertainReason:'Connection lost'};
+ const filters={query:'',agent:'',status:'running'};
+ assert.deepEqual(filterThreads([uncertain],[],filters,now),[]);
+ assert.deepEqual(filterThreads([uncertain],[],{...filters,status:'attention'},now),[uncertain]);
+ assert.equal(gate({selected:[uncertain.id],domains:[]},{at:now,sessions:[uncertain],diagnostics:[]},true,now).allowed,false);
+});
 
 test('activity ranges use real activity, not heartbeat freshness; both ends are inclusive',()=>{
   const threads:Session[]=sessions.map((s,i)=>({...s,lastActivityAt:[100,200,300][i],observedAt:now}));

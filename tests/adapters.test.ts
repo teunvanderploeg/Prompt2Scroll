@@ -18,6 +18,32 @@ test('Codex lifecycle, concurrent approvals, user input and completion',()=>{
 test('unknown Codex server request blocks, separate threads stay independent',()=>{
  const s=new CodexState();s.server({method:'turn/started',params:{threadId:'a'}});s.server({method:'turn/started',params:{threadId:'b'}});s.server({id:4,method:'future/request',params:{threadId:'a'}});assert.equal(s.sessions.get('a')?.status,'Waiting for Input');assert.equal(s.sessions.get('b')?.status,'Running');
 });
+test('server-resolved Codex requests release attention only after every request resolves',()=>{
+ const state=new CodexState();
+ state.server({method:'turn/started',params:{threadId:'a'}});
+ for(const id of [1,2])state.server({id,method:'item/tool/requestUserInput',params:{threadId:'a'}});
+ state.server({method:'serverRequest/resolved',params:{requestId:1}});
+ assert.equal(state.pending.size,1);assert.equal(state.sessions.get('a')!.status,'Waiting for Input');
+ state.server({method:'serverRequest/resolved',params:{threadId:'a',requestId:2}});
+ assert.equal(state.pending.size,0);assert.equal(state.sessions.get('a')!.status,'Running');
+ state.server({method:'turn/completed',params:{threadId:'a',turn:{status:'completed'}}});
+ state.client({id:2,result:{}});state.server({method:'serverRequest/resolved',params:{requestId:2}});
+ assert.equal(state.sessions.get('a')!.status,'Completed','late duplicate replies cannot restart a finished turn');
+});
+test('Codex active status discovers resumed work before approvals and preserves later idle status',()=>{
+ for(const serverResolved of [false,true]){
+  const state=new CodexState();
+  state.server({method:'thread/status/changed',params:{threadId:'a',status:{type:'active',activeFlags:[]}}});
+  state.server({id:1,method:'item/commandExecution/requestApproval',params:{threadId:'a'}});
+  if(serverResolved)state.server({method:'serverRequest/resolved',params:{requestId:1}});
+  else state.client({id:1,result:{decision:'accept'}});
+  assert.equal(state.sessions.get('a')!.status,'Running');
+  state.server({id:2,method:'item/tool/requestUserInput',params:{threadId:'a'}});
+  state.server({method:'thread/status/changed',params:{threadId:'a',status:{type:'idle'}}});
+  state.client({id:2,result:{}});
+  assert.equal(state.sessions.get('a')!.status,'Idle');
+ }
+});
 test('OpenCode waits on pending requests even while running; retries and unknown states block',()=>{
  assert.equal(openCodeStatus({type:'running'},false),'Running');assert.equal(openCodeStatus({type:'running'},true),'Waiting for Input');assert.equal(openCodeStatus({type:'retry'},false),'Idle');assert.equal(openCodeStatus({type:'future'},false),'Idle');assert.equal(openCodeStatus(undefined,false,'failed'),'Error');assert.equal(openCodeStatus(undefined,false,'succeeded'),'Completed');
 });

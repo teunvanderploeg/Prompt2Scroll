@@ -1,6 +1,7 @@
 import { SessionList, SessionRow } from './session-row.js';
 import { activityBounds, DEFAULT_ACTIVITY, filterThreads, type ActivityFilter } from './thread-filters.js';
 import { DEFAULTS, missingSession, normalizeDomain, type Session, type Settings } from '../shared/policy.js';
+import type { SettingsChanges } from '../shared/settings.js';
 
 let settings:Settings=structuredClone(DEFAULTS);let saving=false;let saveQueue=Promise.resolve();let pendingSaves=0;
 let sessions:Session[]=[];let refreshing=false;let viewReady=false;
@@ -9,18 +10,16 @@ type Page=typeof PAGES[number];
 const list=document.querySelector<HTMLElement>('#sessions')!;
 const monitored=document.querySelector<HTMLElement>('#monitored-sessions')!;
 let popupView:{page:Page;scroll:number;monitoredScroll:number}={page:'threads',scroll:0,monitoredScroll:0};
-const toggle=(id:string,on:boolean)=>{if(settings.anyRunning||saving)return;void save(current=>({selected:on?[...new Set([...current.selected,id])]:current.selected.filter(x=>x!==id)}));};
+const toggle=(id:string,on:boolean)=>{if(settings.anyRunning||saving)return;void save({thread:{id,watched:on}});};
 const rowCache=new Map<string,SessionRow>();
 const availableList=new SessionList(list,toggle,rowCache);const monitoredList=new SessionList(monitored,toggle,rowCache);
 const websiteRows=new Map<string,HTMLElement>();
-type Changes=Partial<Settings>|((current:Settings)=>Partial<Settings>);
-function save(changes:Changes):Promise<boolean>{
+function save(changes:SettingsChanges):Promise<boolean>{
   const focused=document.activeElement as HTMLElement|null;
   saving=true;pendingSaves++;setBusy();
   const result=saveQueue.then(async()=>{
-    const next={...settings,...(typeof changes==='function'?changes(settings):changes)};
     try{
-      const state=await browser.runtime.sendMessage({type:'save',settings:next});
+      const state=await browser.runtime.sendMessage({type:'save',settings:changes});
       if(!state?.settings)throw new Error('Settings were not saved. Reopen the popup and try again.');
       settings=state.settings;applyAppearance();document.querySelector('#error')!.textContent='';renderThreads();renderWebsites();return true;
     }catch(e){document.querySelector('#error')!.textContent=e instanceof Error?e.message:String(e);return false;}
@@ -29,7 +28,7 @@ function save(changes:Changes):Promise<boolean>{
   saveQueue=result.then(()=>{});return result;
 }
 function setBusy(){for(const input of document.querySelectorAll<HTMLInputElement>('input[type=checkbox]'))input.disabled=saving||(settings.anyRunning===true&&!!input.closest('.session'));}
-function applyAppearance(){document.documentElement.dataset.theme=settings.darkMode?'dark':'light';document.body.classList.toggle('any-running',settings.anyRunning===true);document.querySelector<HTMLInputElement>('#dark-mode')!.checked=settings.darkMode===true;document.querySelector<HTMLInputElement>('#any-running')!.checked=settings.anyRunning===true;}
+function applyAppearance(){document.documentElement.dataset.theme=settings.darkMode?'dark':'light';document.body.classList.toggle('any-running',settings.anyRunning===true);document.querySelector<HTMLInputElement>('#dark-mode')!.checked=settings.darkMode===true;document.querySelector<HTMLInputElement>('#any-running')!.checked=settings.anyRunning===true;document.querySelector<HTMLInputElement>('#auto-open-finished')!.checked=settings.autoOpenFinished===true;}
 async function refresh(){
   if(saving||refreshing)return;refreshing=true;
   try{
@@ -87,7 +86,7 @@ function renderWebsites(){
       const remove=document.createElement('button');remove.type='button';remove.className='remove-site';remove.textContent='×';remove.setAttribute('aria-label',`Remove ${domain}`);
       remove.addEventListener('click',async()=>{
         remove.disabled=true;
-        await save(current=>({domains:current.domains.filter(value=>value!==domain)}));remove.disabled=false;
+        await save({website:{domain,blocked:false}});remove.disabled=false;
       });
       item.append(name,remove);websiteRows.set(domain,item);
     }
@@ -136,7 +135,7 @@ document.querySelector('#sites')!.addEventListener('submit',async event=>{
   domainInput.removeAttribute('aria-invalid');
   if(settings.domains.includes(domain)){document.querySelector('#site-error')!.textContent='Already added.';return;}
   const value=domainInput.value;
-  if(await save(current=>({domains:[...new Set([...current.domains,domain])]}))){if(domainInput.value===value)domainInput.value='';document.querySelector('#site-error')!.textContent='';domainInput.focus();}
+  if(await save({website:{domain,blocked:true}})){if(domainInput.value===value)domainInput.value='';document.querySelector('#site-error')!.textContent='';domainInput.focus();}
 });
 const seconds=document.querySelector<HTMLInputElement>('#countdown-seconds')!;let countdownEdit=0;let savedTimer:ReturnType<typeof setTimeout>|undefined;
 seconds.addEventListener('input',()=>{
@@ -152,6 +151,10 @@ document.querySelector<HTMLInputElement>('#dark-mode')!.addEventListener('change
 document.querySelector<HTMLInputElement>('#any-running')!.addEventListener('change',async event=>{
   const anyRunning=(event.currentTarget as HTMLInputElement).checked;
   await save({anyRunning});applyAppearance();
+});
+document.querySelector<HTMLInputElement>('#auto-open-finished')!.addEventListener('change',async event=>{
+  const autoOpenFinished=(event.currentTarget as HTMLInputElement).checked;
+  await save({autoOpenFinished});applyAppearance();
 });
 document.querySelector('#preferences')!.addEventListener('submit',e=>e.preventDefault());
 void start();

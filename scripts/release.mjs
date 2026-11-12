@@ -34,7 +34,9 @@ export async function buildRelease({sourceRoot = root, xpi} = {}) {
     await writeFile(join(folder, 'package.json'), JSON.stringify({name: 'prompt2scroll-installed', version, private: true, type: 'module'}, null, 2) + '\n');
     await copyFile(join(sourceRoot, 'dist/companion/THIRD_PARTY_NOTICES.txt'), join(folder, 'THIRD_PARTY_NOTICES.txt'));
     if (xpi) await copyFile(xpi, join(folder, 'dist/prompt2scroll.xpi'));
-    const archive = join(sourceRoot, 'dist', `${name}.zip`);
+    const releaseDirectory = join(sourceRoot, 'dist', 'releases', version);
+    await mkdir(releaseDirectory, {recursive: true});
+    const archive = join(releaseDirectory, `${name}.zip`);
     await rm(archive, {force: true});
     execFileSync('zip', ['-qr', archive, name], {cwd: temporary});
     const sha = createHash('sha256').update(await readFile(archive)).digest('hex');

@@ -2,6 +2,22 @@
 
 Use distraction sites while your coding agents work. When they need you, the page is covered without losing your place. Everything runs locally. No account or cloud service.
 
+## See it in action
+
+Select the threads you want to watch, then browse while they run.
+
+![Prompt2Scroll thread picker with two monitored agents running and another thread completed](docs/images/threads.png)
+
+Choose which websites should be covered when your agents need attention.
+
+![Websites tab with Reddit, YouTube, X, and Instagram in the distraction site list](docs/images/websites.png)
+
+When a selected agent needs input or finishes, Prompt2Scroll covers the page so you can return to your work without losing your place.
+
+![Attention screen showing a coding thread that needs input](docs/images/attention.png)
+
+<sub>Screenshots use sample threads in the current interface.</sub>
+
 ## Install
 
 Requires desktop Firefox 142+ and [Node.js 22.13+](https://nodejs.org/). Supports macOS and Linux.
@@ -27,7 +43,7 @@ Start Codex CLI through the installed launcher:
 
 It accepts normal Codex arguments, including `resume`. Codex must support `--remote` and `app-server --listen stdio://`. Sessions started with plain `codex` are not monitored.
 
-All selected threads must be running to unlock sites. Enable **Any running agent** in Settings to unlock when any detected agent runs. Settings also has dark mode and the countdown duration. Changes save automatically.
+All selected threads must be running to unlock sites. Removing the last watched thread unblocks sites and returns blocked tabs to their original pages. Enable **Any running agent** in Settings to unlock when any detected agent runs. Settings also has dark mode and the countdown duration. Enable **Auto-open finished threads** to switch to a monitored T3 Code thread when it finishes or needs attention. In Any running agent mode, this applies to all T3 Code threads. This setting is off by default. Changes save automatically.
 
 ## Troubleshooting
 

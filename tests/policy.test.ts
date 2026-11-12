@@ -7,8 +7,13 @@ const settings={...DEFAULTS,selected:['a','b']};
 const snapshot=(...sessions:Session[]):Snapshot=>({sessions,at:now,diagnostics:[]});
 test('all selected running grants access; unrelated stopped agents do not block',()=>assert.equal(gate(settings,snapshot(session('a'),session('b'),session('c','Error')),true,now).allowed,true));
 for(const status of ['Waiting for Input','Completed','Error','Idle'] as Status[])test(`one selected ${status} blocks all sites, then resumes`,()=>{const s=snapshot(session('a'),session('b',status));assert.equal(gate(settings,s,true,now).allowed,false);s.sessions[1].status='Running';assert.equal(gate(settings,s,true,now).allowed,true);});
-test('empty selection, missing session, disconnected host, stale host and stale agent block',()=>{
- assert.equal(gate({...settings,selected:[]},snapshot(session('a')),true,now).allowed,false);
+test('an empty watched list allows access even without a companion connection',()=>{
+ const empty={...settings,selected:[]};
+ for(const decision of [gate(empty,snapshot(),true,now),gate(empty,snapshot(session('a','Completed')),true,now),gate(empty),gate(empty,snapshot(),false,now),gate(empty,{...snapshot(),at:now-6000},true,now)]){
+  assert.equal(decision.allowed,true);assert.deepEqual(decision.attention,[]);
+ }
+});
+test('missing session, disconnected host, stale host and stale agent block',()=>{
  assert.equal(gate(settings,snapshot(session('a')),true,now).allowed,false);
  assert.equal(gate(settings,snapshot(session('a'),session('b')),false,now).allowed,false);
  assert.equal(gate(settings,{...snapshot(session('a'),session('b')),at:now-6000},true,now).allowed,false);
@@ -16,9 +21,10 @@ test('empty selection, missing session, disconnected host, stale host and stale 
  assert.equal(gate(settings,snapshot(session('a'),session('b','Running',now+5000)),true,now).allowed,false);
 });
 test('hostname matching covers subdomains without substring bypasses',()=>{
- for(const url of ['https://reddit.com','https://old.reddit.com/r/test','https://reddit.com:443'])assert.equal(matches(url,['reddit.com']),true);
- for(const url of ['https://reddit.com.evil.test','https://notreddit.com','https://reddit.com@evil.test','file:///reddit.com'])assert.equal(matches(url,['reddit.com']),false);
+ for(const url of ['https://reddit.com','https://old.reddit.com/r/test','https://reddit.com:443','https://reddit.com./r/test','https://old.reddit.com./','http://REDDIT.COM.:80'])assert.equal(matches(url,['reddit.com']),true);
+ for(const url of ['https://reddit.com.evil.test','https://reddit.com.evil.test.','https://notreddit.com.','https://notreddit.com','https://reddit.com@evil.test','file:///reddit.com'])assert.equal(matches(url,['reddit.com']),false);
  assert.equal(normalizeDomain('HTTPS://Reddit.COM/'),'reddit.com');
+ assert.equal(normalizeDomain('reddit.com.'),'reddit.com');
  for(const v of ['*.reddit.com','https://reddit.com/r/test','reddit.com:42','https://a@reddit.com','reddit com'])assert.throws(()=>normalizeDomain(v));
 });
 

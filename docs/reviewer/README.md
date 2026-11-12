@@ -1,4 +1,4 @@
-# Reproducing Prompt2Scroll 0.1.1
+# Reproducing Prompt2Scroll 0.1.2
 
 This archive contains the original TypeScript, HTML, CSS and SVG source, the build scripts and the npm lockfile. No private dependencies, credentials or accounts are needed to build it. Do not run the companion installer to reproduce the extension.
 
@@ -24,7 +24,7 @@ The lockfile fixes all dependency versions, including esbuild 0.28.2 and web-ext
 
 The script checks Node and npm versions, installs the locked dependencies with `npm ci`, and runs `npm run package`. The existing `scripts/build.mjs` compiles and bundles the browser TypeScript with esbuild, copies the HTML/CSS/SVG/manifest, and adds content hashes to local asset URLs. It also builds the separate native companion. web-ext then packages only `dist/extension` into the add-on ZIP.
 
-The rebuilt extension files are in **`dist/extension/`**. The extension package is **`dist/prompt2scroll-0.1.1.zip`**. Compare the unpacked files to the submitted extension. ZIP timestamps may differ; the extension file contents must match exactly. The separate `dist/companion` files are not part of the extension ZIP.
+The rebuilt extension files are in **`dist/extension/`**. The extension package is **`dist/releases/0.1.2/prompt2scroll-0.1.2.zip`**. Compare the unpacked files to the submitted extension. ZIP timestamps may differ; the extension file contents must match exactly. The separate `dist/companion` files are not part of the extension ZIP.
 
 ## Reviewing functionality
 
