@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en" class="popup-root">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="ui.css">
+<title>Prompt2Scroll</title>
+<body class="popup">
+  <nav class="tabs" role="tablist" aria-label="Navigation">
+    <button id="threads-tab" type="button" role="tab" aria-selected="true" aria-controls="threads-panel">Threads</button>
+    <button id="websites-tab" type="button" role="tab" aria-selected="false" aria-controls="websites-panel" tabindex="-1">Websites</button>
+    <button id="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="settings-panel" tabindex="-1">Settings</button>
+  </nav>
+  <section id="threads-panel" role="tabpanel" aria-labelledby="threads-tab">
+    <p id="monitor-mode" class="mode-label" hidden>Any running agent</p>
+    <div class="thread-tools">
+      <input id="thread-search" type="search" placeholder="Search threads…" aria-label="Search threads" autocomplete="off">
+      <div class="filters">
+        <select id="agent-filter" aria-label="Filter by source"><option value="">All sources</option></select>
+        <select id="status-filter" aria-label="Filter threads">
+          <option value="all">All threads</option>
+          <option value="running">Running</option>
+          <option value="attention">Needs attention</option>
+          <option value="waiting">Waiting for input</option>
+          <option value="completed">Completed</option>
+          <option value="error">Error</option>
+          <option value="idle">Idle</option>
+        </select>
+        <select id="activity-period" aria-label="Last activity range" title="Last activity">
+          <option value="any">Any time</option>
+          <option value="hour">Last hour</option>
+          <option value="day">Last 24 hours</option>
+          <option value="week">Last 7 days</option>
+          <option value="month">Last 30 days</option>
+          <option value="custom">Custom range</option>
+        </select>
+        <span id="thread-count" aria-live="polite"></span>
+      </div>
+      <div id="activity-range" class="activity-controls" hidden>
+        <div><label for="activity-oldest">Oldest activity</label><input id="activity-oldest" type="datetime-local"></div>
+        <div><label for="activity-newest">Newest activity</label><input id="activity-newest" type="datetime-local"></div>
+      </div>
+      <p id="activity-error" role="alert"></p>
+    </div>
+    <section id="monitored-section" aria-label="Monitored threads" hidden>
+      <div class="list-label"><span id="monitored-label">Monitoring</span> <span id="monitored-count"></span></div>
+      <div id="monitored-sessions"></div>
+    </section>
+    <main id="sessions" aria-label="Other threads"></main>
+    <p id="threads-empty" class="hint" hidden></p>
+  </section>
+  <section id="websites-panel" role="tabpanel" aria-labelledby="websites-tab" hidden>
+    <form id="sites" class="site-add">
+      <input id="domain-input" type="text" placeholder="Add website" aria-label="Website hostname" autocomplete="off" spellcheck="false" aria-describedby="site-error">
+      <button type="submit" aria-label="Add website">Add</button>
+    </form>
+    <p id="site-error" role="alert"></p>
+    <div id="domains" aria-label="Blocked websites"></div>
+  </section>
+  <section id="settings-panel" role="tabpanel" aria-labelledby="settings-tab" hidden>
+    <form id="preferences">
+      <div class="setting-row">
+        <label for="countdown-seconds">Countdown</label>
+        <div class="countdown-field"><input id="countdown-seconds" type="number" min="0" max="60" step="1" value="3" required aria-describedby="settings-saved"><span>seconds</span><span id="settings-saved" role="status"></span></div>
+      </div>
+      <label class="setting-row theme-setting" for="dark-mode"><span>Dark mode</span><input id="dark-mode" type="checkbox" role="switch"></label>
+      <label class="setting-row theme-setting" for="any-running"><span>Any running agent</span><input id="any-running" type="checkbox" role="switch"></label>
+    </form>
+  <details class="connection"><summary>Connection details</summary><p id="connection"></p><p>Run <code>npm run setup</code> in the project folder to connect Firefox.</p></details>
+  </section>
+  <p id="error" role="alert"></p>
+
+  <script src="popup.js"></script>
+</body>
+</html>
