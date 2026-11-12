@@ -9,12 +9,13 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --test tests/*.test.ts tests/*.test.mjs",
     "setup": "npm run build && node scripts/install.mjs",
     "codex": "node dist/companion/codex-launch.js",
     "inspect": "node dist/companion/host.js --inspect",
     "lint:extension": "web-ext lint --source-dir dist/extension",
-    "package": "npm run build && web-ext build --source-dir dist/extension --artifacts-dir dist --overwrite-dest"
+    "package": "npm run build && web-ext build --source-dir dist/extension --artifacts-dir dist --overwrite-dest",
+    "release": "npm run package && node scripts/release.mjs"
   },
   "dependencies": {
     "ws": "^8.22.2"
